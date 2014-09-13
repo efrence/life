@@ -1,8 +1,7 @@
 life
 ====
 ###Install
-Clone an run 'bundler'
+Clone then cd into life folder and run 'bundler'
 
 ###Run
-
 ruby gameoflife.rb
