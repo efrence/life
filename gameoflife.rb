@@ -30,7 +30,6 @@ module GameOfLife
             else
               false
             end
-      val
     end
 
     def getAllNeighboursStates
@@ -52,13 +51,13 @@ module GameOfLife
       @@board[pos[1]][pos[0]].currentState
     end
 
-    def getAllNeighboursPos
+    def getAllNeighboursPos      
       positions = {
         :left => [getNeighborPos(@x,true),@y],
         :right => [getNeighborPos(@x,false),@y],
         :bottom => [@x,getNeighborPos(@y,true)],
         :top => [@x,getNeighborPos(@y,false)]
-      }
+      }      
       positions[:leftBottom] = [positions[:left][0],positions[:bottom][1]]
       positions[:leftTop] = [positions[:left][0],positions[:top][1]]
       positions[:rightBottom] = [positions[:right][0],positions[:bottom][1]]
@@ -95,10 +94,11 @@ module GameOfLife
   end
 
   class Board
-    attr_accessor :board
+    attr_accessor :board, :square_length
 
     def initialize(square_length,initial_board = nil)
       @board = []
+      @square_length = square_length
       if not initial_board
         square_length.times do |y|
           @board << []
@@ -119,25 +119,6 @@ module GameOfLife
       end
       GameOfLife::Cell.setBoard(@board)
     end
-  end
-
-  class TickManager
-
-    def initialize(tickTime,boardSize,initial_board =nil)
-      @generation = 0
-      @tickTime = tickTime
-      @boardSize = boardSize
-      @board = GameOfLife::Board.new(boardSize,initial_board).board
-    end
-
-    def run
-      while true do
-        system "clear" or system "cls"
-        printBoard
-        sleep @tickTime
-        nextTick
-      end
-    end
 
     def printBoard
       @board.each do |row|
@@ -146,14 +127,32 @@ module GameOfLife
           print "x ".green if cell.currentState
           print "o " unless cell.currentState
         end
+      end      
+    end
+  end
+
+  class TickManager
+
+    def initialize(tickTime,board)
+      @generation = 0
+      @tickTime = tickTime      
+      @board = board
+    end
+
+    def run
+      while true do
+        system "clear" or system "cls"
+        @board.printBoard
+        puts; puts; puts "Generation: "+ @generation.to_s.green
+        sleep @tickTime
+        nextTick
       end
-      puts; puts; puts "Generation: "+ @generation.to_s.green
     end
 
     def nextTick
       nextBoard = []
       atLeastOneAlive = false
-      @board.each_with_index  do |row,i|
+      @board.board.each_with_index  do |row,i|
         nextBoard << []
         row.each do |cell|
           cell.instance_eval do
@@ -166,7 +165,7 @@ module GameOfLife
       end
       if atLeastOneAlive
         @generation += 1
-        @board = GameOfLife::Board.new(@boardSize,nextBoard).board
+        @board = GameOfLife::Board.new(@board.square_length,nextBoard)
       else
         puts;raise "Game Over".red
       end
@@ -182,6 +181,8 @@ beacon_2 = beacon_1.reverse
 #blinker_board = [false_row,false_row,middle_row,false_row,false_row]
 beacon_board = [bfalse_row,beacon_1,beacon_1,beacon_2,beacon_2,bfalse_row]
 
-# manage = GameOfLife::TickManager.new(0.5,5,blinker_board)
-manager = GameOfLife::TickManager.new(0.5,6)
+# board = GameOfLife::Board.new(5,blinker_board)
+board = GameOfLife::Board.new(6,beacon_board)
+# board = GameOfLife::Board.new(6)
+manager = GameOfLife::TickManager.new(0.2,board)
 manager.run
