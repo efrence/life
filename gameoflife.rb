@@ -1,12 +1,13 @@
 require 'colorize'
+require 'binding_of_caller'
 
 module GameOfLife
 
   class Cell
     attr_accessor :currentState
 
-    def self.setBoard(board)
-      @@board = board
+    class << self
+      attr_accessor :board
     end
 
     def initialize(x,y,state,len)
@@ -16,6 +17,7 @@ module GameOfLife
       @len = len
       @neighbours_alive = 0
       @neighbours_dead = 0
+      Cell.board ||= binding.of_caller(1).eval("board")
     end
 
     def nextState
@@ -47,8 +49,8 @@ module GameOfLife
       counts
     end
 
-    def getNeighbor(pos) 
-      @@board[pos[1]][pos[0]].currentState
+    def getNeighbor(pos)
+      Cell.board[pos[1]][pos[0]].currentState
     end
 
     def getAllNeighboursPos      
@@ -96,11 +98,12 @@ module GameOfLife
   class Board
     attr_accessor :board
 
-    def initialize(square_length,initial_board = nil)
+    def initialize(square_length = 5,initial_board = nil)
+      Cell.board = nil
       @board = []
       @square_length = square_length
       if not initial_board
-        square_length.times do |y|
+        square_length.times do |y| 
           @board << []
           square_length.times do |x|
             on = rand > 0.70 ? true : false
@@ -117,7 +120,6 @@ module GameOfLife
           end
         end
       end
-      GameOfLife::Cell.setBoard(@board)
     end
 
     def printBoard
@@ -189,6 +191,6 @@ beacon_board = [bfalse_row,beacon_1,beacon_1,beacon_2,beacon_2,bfalse_row]
 
 # board = GameOfLife::Board.new(5,blinker_board)
 board = GameOfLife::Board.new(6,beacon_board)
-# board = GameOfLife::Board.new(6)
+# board = GameOfLife::Board.new
 manager = GameOfLife::TickManager.new(0.2,board)
 manager.run
