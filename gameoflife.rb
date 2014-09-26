@@ -94,7 +94,7 @@ module GameOfLife
   end
 
   class Board
-    attr_accessor :board, :square_length
+    attr_accessor :board
 
     def initialize(square_length,initial_board = nil)
       @board = []
@@ -129,6 +129,24 @@ module GameOfLife
         end
       end      
     end
+
+    def refresh
+      nextBoard = []
+      atLeastOneAlive = false
+      @board.each_with_index  do |row,i|
+        nextBoard << []
+        row.each do |cell|
+          cell.instance_eval do
+            getAllNeighboursStates
+            deadOrAlive = nextState
+            atLeastOneAlive = true if deadOrAlive
+            nextBoard[i] << nextState
+          end
+        end
+      end
+      @board = GameOfLife::Board.new(@square_length,nextBoard)
+      result = atLeastOneAlive ? @board : false
+    end
   end
 
   class TickManager
@@ -152,20 +170,8 @@ module GameOfLife
     def nextTick
       nextBoard = []
       atLeastOneAlive = false
-      @board.board.each_with_index  do |row,i|
-        nextBoard << []
-        row.each do |cell|
-          cell.instance_eval do
-            getAllNeighboursStates
-            deadOrAlive = nextState
-            atLeastOneAlive = true if deadOrAlive
-            nextBoard[i] << nextState
-          end
-        end
-      end
-      if atLeastOneAlive
+      if @board = @board.refresh
         @generation += 1
-        @board = GameOfLife::Board.new(@board.square_length,nextBoard)
       else
         puts;raise "Game Over".red
       end
