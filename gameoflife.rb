@@ -98,31 +98,54 @@ module GameOfLife
   class Board
     attr_accessor :board
 
-    def initialize(square_length = 5,initial_board = nil)
-      Cell.board = nil
-      @board = []
+    def initialize(square_length = 5)
+      generic_initialize
+      fill_board_from_length square_length
+    end
+
+    def self.new_from_length(square_length)
+      instance = allocate
+      instance.generic_initialize
+      instance.fill_board_from_length square_length
+      instance
+    end
+
+    def self.new_with_initial_config(initial_board)
+      instance = allocate
+      instance.generic_initialize
+      instance.fill_from_init_config initial_board
+      instance
+    end
+
+    def fill_board_from_length(square_length)
       @square_length = square_length
-      if not initial_board
-        square_length.times do |y| 
-          @board << []
-          square_length.times do |x|
-            on = rand > 0.70 ? true : false
-            cell = Cell.new(x,y,on,square_length)
-            @board[y] << cell
-          end
-        end
-      else
-        initial_board.each_with_index do |row,y|
-          @board << []
-          row.each_with_index do |cell_val,x|
-            cell = Cell.new(x,y,cell_val,square_length)
-            @board[y] << cell
-          end
+      square_length.times do |y| 
+        @board << []
+        square_length.times do |x|
+          on = rand > 0.70 ? true : false
+          cell = Cell.new(x,y,on,square_length)
+          @board[y] << cell
         end
       end
     end
 
-    def printBoard
+    def fill_from_init_config(initial_board)
+      @square_length = initial_board.size
+      initial_board.each_with_index do |row,y|
+        @board << []
+        row.each_with_index do |cell_val,x|
+          cell = Cell.new(x,y,cell_val,@square_length)
+          @board[y] << cell
+        end
+      end
+    end
+
+    def generic_initialize
+      Cell.board = nil
+      @board = []
+    end
+
+   def printBoard
       @board.each do |row|
         puts "\n"
         row.each do |cell|
@@ -146,7 +169,7 @@ module GameOfLife
           end
         end
       end
-      @board = GameOfLife::Board.new(@square_length,nextBoard)
+      @board = GameOfLife::Board.new_with_initial_config(nextBoard)
       result = atLeastOneAlive ? @board : false
     end
   end
@@ -189,8 +212,16 @@ beacon_2 = beacon_1.reverse
 #blinker_board = [false_row,false_row,middle_row,false_row,false_row]
 beacon_board = [bfalse_row,beacon_1,beacon_1,beacon_2,beacon_2,bfalse_row]
 
-# board = GameOfLife::Board.new(5,blinker_board)
-board = GameOfLife::Board.new(6,beacon_board)
-# board = GameOfLife::Board.new
+# 3 options to initialize the Board class
+# OPTION 1 set board from initial configuration
+# board = GameOfLife::Board.new_with_initial_config(blinker_board)
+board = GameOfLife::Board.new_with_initial_config(beacon_board)
+
+# OPTION 2 Set board from specific length
+#board = GameOfLife::Board.new_from_length(8)
+
+# OPTION 3 Use defaults params
+#board = GameOfLife::Board.new
+
 manager = GameOfLife::TickManager.new(0.2,board)
 manager.run
