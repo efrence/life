@@ -1,10 +1,11 @@
 require 'colorize'
 require 'binding_of_caller'
+require 'observer'
 
 module GameOfLife
 
   class Cell
-    attr_accessor :currentState
+    attr_accessor :currentState,:nextState
 
     class << self
       attr_accessor :board
@@ -20,7 +21,12 @@ module GameOfLife
       Cell.board ||= binding.of_caller(1).eval("board")
     end
 
-    def nextState
+    def update
+      getAllNeighboursStates
+      @nextState = determineNextState 
+    end
+
+    def determineNextState
       val = if @neighbours_alive < 2
               false
             elsif @neighbours_alive > 3
@@ -96,9 +102,11 @@ module GameOfLife
   end
 
   class Board
-    attr_accessor :board
+    include Observable
+    attr_accessor :board, :observers
 
     def initialize(square_length = 5)
+      super()
       generic_initialize
       fill_board_from_length square_length
     end
@@ -116,7 +124,7 @@ module GameOfLife
       instance.fill_from_init_config initial_board
       instance
     end
-
+     
     def fill_board_from_length(square_length)
       @square_length = square_length
       square_length.times do |y| 
@@ -124,6 +132,7 @@ module GameOfLife
         square_length.times do |x|
           on = rand > 0.70 ? true : false
           cell = Cell.new(x,y,on,square_length)
+          add_observer(cell)
           @board[y] << cell
         end
       end
@@ -135,6 +144,7 @@ module GameOfLife
         @board << []
         row.each_with_index do |cell_val,x|
           cell = Cell.new(x,y,cell_val,@square_length)
+          add_observer(cell)
           @board[y] << cell
         end
       end
@@ -158,15 +168,13 @@ module GameOfLife
     def refresh
       nextBoard = []
       atLeastOneAlive = false
+      changed
+      notify_observers
       @board.each_with_index  do |row,i|
         nextBoard << []
         row.each do |cell|
-          cell.instance_eval do
-            getAllNeighboursStates
-            deadOrAlive = nextState
-            atLeastOneAlive = true if deadOrAlive
-            nextBoard[i] << nextState
-          end
+          nextBoard[i] << cell.nextState
+          atLeastOneAlive = true if cell.nextState
         end
       end
       @board = GameOfLife::Board.new_with_initial_config(nextBoard)
@@ -205,23 +213,23 @@ module GameOfLife
   end
 end
 false_row = [false,false,false,false,false]
-bfalse_row = false_row << false
+#bfalse_row = false_row << false
 beacon_1 = [false,true,true,false,false,false]
 beacon_2 = beacon_1.reverse
-# middle_row = [false,true,true,true,false]
-#blinker_board = [false_row,false_row,middle_row,false_row,false_row]
-beacon_board = [bfalse_row,beacon_1,beacon_1,beacon_2,beacon_2,bfalse_row]
+middle_row = [false,true,true,true,false]
+blinker_board = [false_row,false_row,middle_row,false_row,false_row]
+#beacon_board = [bfalse_row,beacon_1,beacon_1,beacon_2,beacon_2,bfalse_row]
 
 # 3 options to initialize the Board class
 # OPTION 1 set board from initial configuration
-# board = GameOfLife::Board.new_with_initial_config(blinker_board)
-board = GameOfLife::Board.new_with_initial_config(beacon_board)
+#board = GameOfLife::Board.new_with_initial_config(blinker_board)
+#board = GameOfLife::Board.new_with_initial_config(beacon_board)
 
 # OPTION 2 Set board from specific length
 #board = GameOfLife::Board.new_from_length(8)
 
 # OPTION 3 Use defaults params
-#board = GameOfLife::Board.new
+board = GameOfLife::Board.new
 
 manager = GameOfLife::TickManager.new(0.2,board)
 manager.run
