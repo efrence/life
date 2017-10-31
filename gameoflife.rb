@@ -11,14 +11,14 @@ module GameOfLife
       attr_accessor :board
     end
 
-    def initialize(x,y,state,len)
-      @x = x
-      @y = y
-      @currentState = state
-      @len = len
+    def initialize(attrs={})
+      @x = attrs.fetch(:x)
+      @y = attrs.fetch(:y)
+      @currentState = attrs.fetch(:state)
+      @len = attrs.fetch(:len)
       @neighbours_alive = 0
       @neighbours_dead = 0
-      Cell.board ||= binding.of_caller(1).eval("board")
+      Cell.board ||= attrs.fetch(:board)
     end
 
     def update
@@ -131,7 +131,7 @@ module GameOfLife
         @board << []
         square_length.times do |x|
           on = rand > 0.70 ? true : false
-          cell = Cell.new(x,y,on,square_length)
+          cell = Cell.new(x: x, y: y,state: on, len: square_length, board: @board)
           add_observer(cell)
           @board[y] << cell
         end
@@ -143,7 +143,7 @@ module GameOfLife
       initial_board.each_with_index do |row,y|
         @board << []
         row.each_with_index do |cell_val,x|
-          cell = Cell.new(x,y,cell_val,@square_length)
+          cell = Cell.new(x: x,y: y, state: cell_val, len: @square_length, board: @board)
           add_observer(cell)
           @board[y] << cell
         end
